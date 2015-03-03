@@ -7,10 +7,10 @@ import (
 )
 
 type LiveProxy struct {
-	Listener  *net.TCPListener
+	Listener *net.TCPListener
 
-	Done chan bool
-	Control chan *net.TCPAddr
+	Done           chan bool
+	Control        chan *net.TCPAddr
 	GetDestination chan *net.TCPAddr
 }
 
@@ -28,10 +28,10 @@ func New(local string) (*LiveProxy, error) {
 	}
 
 	l := &LiveProxy{
-		Listener: listener,
-		Control: make(chan *net.TCPAddr),
+		Listener:       listener,
+		Control:        make(chan *net.TCPAddr),
 		GetDestination: make(chan *net.TCPAddr),
-		Done: make(chan bool),
+		Done:           make(chan bool),
 	}
 
 	go l.control()
@@ -87,7 +87,7 @@ func (l *LiveProxy) connect() {
 		go l.pipe(conn, dest, a)
 		go l.pipe(dest, conn, b)
 
-		go func(){
+		go func() {
 			select {
 			case <-a:
 				log.Printf("got close from a")
@@ -101,7 +101,7 @@ func (l *LiveProxy) connect() {
 	}
 }
 
-func (l *LiveProxy) pipe (dest, src *net.TCPConn, signal chan bool) {
+func (l *LiveProxy) pipe(dest, src *net.TCPConn, signal chan bool) {
 	io.Copy(dest, src)
 	src.Close()
 	signal <- true

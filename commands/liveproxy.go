@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-func main(){
+func main() {
 	lp, err := liveproxy.New(":11000")
 
 	log.Printf("Liveproxy: %#v, %#v", lp, err)
 
 	lp.SwitchTo(":8007")
 
-	go func(){
+	go func() {
 		var toggle bool
 		t := time.NewTicker(10 * time.Second)
 
