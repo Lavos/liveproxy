@@ -9,7 +9,7 @@ import (
 type LiveProxy struct {
 	Listener *net.TCPListener
 
-	Done           chan bool
+	Done           chan struct{}
 	Control        chan *net.TCPAddr
 	GetDestination chan *net.TCPAddr
 }
@@ -31,7 +31,7 @@ func New(local string) (*LiveProxy, error) {
 		Listener:       listener,
 		Control:        make(chan *net.TCPAddr),
 		GetDestination: make(chan *net.TCPAddr),
-		Done:           make(chan bool),
+		Done:           make(chan struct{}),
 	}
 
 	go l.control()
@@ -47,9 +47,7 @@ func (l *LiveProxy) control() {
 
 	for {
 		select {
-		case d := <-l.Control:
-			destination = d
-
+		case destination = <-l.Control:
 		case l.GetDestination <- destination:
 		}
 	}
@@ -81,8 +79,8 @@ func (l *LiveProxy) connect() {
 			continue
 		}
 
-		a := make(chan bool)
-		b := make(chan bool)
+		a := make(chan struct{})
+		b := make(chan struct{})
 
 		go l.pipe(conn, dest, a)
 		go l.pipe(dest, conn, b)
@@ -101,10 +99,10 @@ func (l *LiveProxy) connect() {
 	}
 }
 
-func (l *LiveProxy) pipe(dest, src *net.TCPConn, signal chan bool) {
+func (l *LiveProxy) pipe(dest, src *net.TCPConn, signal chan struct{}) {
 	io.Copy(dest, src)
 	src.Close()
-	signal <- true
+	signal <- struct{}{}
 }
 
 func (l *LiveProxy) SwitchTo(destination_address string) error {

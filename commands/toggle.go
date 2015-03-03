@@ -8,9 +8,7 @@ import (
 
 func main() {
 	lp, err := liveproxy.New(":11000")
-
 	log.Printf("Liveproxy: %#v, %#v", lp, err)
-
 	lp.SwitchTo(":8007")
 
 	go func() {
