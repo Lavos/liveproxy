@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"bufio"
 )
 
 func main () {
@@ -13,8 +14,14 @@ func main () {
 		log.Fatal(err)
 	}
 
+	scanner := bufio.NewScanner(conn)
 	conn.Write([]byte(":8008\n:8007\nasdfasdf\n"))
-	b := make([]byte, 1000)
-	n, err := conn.Read(b)
-	log.Printf("[%d] `%s` %s", n, b, err)
+
+	var counter int
+	for counter < 3 && scanner.Scan() {
+		log.Printf("Got Response: %s", scanner.Text())
+		counter++
+	}
+
+	conn.Close()
 }

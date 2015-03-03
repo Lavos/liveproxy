@@ -44,7 +44,7 @@ func handle(conn net.Conn) {
 		err := lp.SwitchTo(scanner.Text())
 
 		if err != nil {
-			conn.Write([]byte(err.Error()))
+			conn.Write([]byte(err.Error() + "\n"))
 			continue
 		}
 
