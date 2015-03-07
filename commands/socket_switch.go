@@ -40,7 +40,6 @@ func handle(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 
 	for scanner.Scan() {
-		log.Printf("GOT `%s`", scanner.Text())
 		err := lp.SwitchTo(scanner.Text())
 
 		if err != nil {
@@ -51,7 +50,6 @@ func handle(conn net.Conn) {
 		conn.Write([]byte("OK\n"))
 	}
 
-	log.Printf("Scanning complete.")
 	conn.Close()
 }
 

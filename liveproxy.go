@@ -2,7 +2,7 @@ package liveproxy
 
 import (
 	"io"
-	"log"
+	// "log"
 	"net"
 )
 
@@ -37,7 +37,7 @@ func New(local string) (*LiveProxy, error) {
 	go l.control()
 	go l.connect()
 
-	log.Printf("Running on: %s", local_address)
+	// log.Printf("Running on: %s", local_address)
 
 	return l, nil
 }
@@ -56,52 +56,58 @@ func (l *LiveProxy) control() {
 func (l *LiveProxy) connect() {
 	for {
 		var conn *net.TCPConn
-		var dest *net.TCPConn
-		var destination_address *net.TCPAddr
 		var err error
 
-		log.Printf("Waiting for connection...")
+		// log.Printf("Waiting for connection...")
 		conn, err = l.Listener.AcceptTCP()
-		log.Printf("Connection attempted.")
+		// log.Printf("Connection attempted.")
 
 		if err != nil {
-			log.Printf("Failed to accept connection: %s", err)
+			// log.Printf("Failed to accept connection: %s", err)
 			continue
 		}
 
-		destination_address = <-l.GetDestination
-
-		dest, err = net.DialTCP("tcp4", nil, destination_address)
-
-		if err != nil {
-			log.Printf("Could not connect to Destination: %s", destination_address)
-			conn.Close()
-			continue
-		}
-
-		a := make(chan struct{})
-		b := make(chan struct{})
-
-		go l.pipe(conn, dest, a)
-		go l.pipe(dest, conn, b)
-
-		go func() {
-			select {
-			case <-a:
-				log.Printf("got close from a")
-				conn.CloseRead()
-
-			case <-b:
-				log.Printf("got close from b")
-				dest.CloseRead()
-			}
-		}()
+		go l.pipe(conn)
 	}
 }
 
-func (l *LiveProxy) pipe(dest, src *net.TCPConn, signal chan struct{}) {
+func (l *LiveProxy) pipe(conn *net.TCPConn) {
+	var dest *net.TCPConn
+	var destination_address *net.TCPAddr
+	var err error
+
+	destination_address = <-l.GetDestination
+
+	dest, err = net.DialTCP("tcp4", nil, destination_address)
+
+	if err != nil {
+		// log.Printf("Could not connect to Destination: %s", destination_address)
+		conn.Close()
+		return
+	}
+
+	a, b := make(chan struct{}), make(chan struct{})
+
+	go broker(conn, dest, a)
+	go broker(dest, conn, b)
+
+	for x := 0; x < 2; x++ {
+		select {
+		case <-a:
+			conn.CloseRead()
+
+		case <-b:
+			dest.CloseRead()
+		}
+	}
+
+	conn.Close()
+	dest.Close()
+}
+
+func broker(dest, src *net.TCPConn, signal chan struct{}) {
 	io.Copy(dest, src)
-	src.Close()
+	src.CloseRead()
 	signal <- struct{}{}
 }
 
@@ -112,7 +118,7 @@ func (l *LiveProxy) SwitchTo(destination_address string) error {
 		return err
 	}
 
-	log.Printf("Destination address is now: %s", address)
+	// log.Printf("Destination address is now: %s", address)
 	l.Control <- address
 
 	return nil
